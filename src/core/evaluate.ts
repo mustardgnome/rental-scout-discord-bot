@@ -32,6 +32,8 @@ For each listing, return:
 
 Be conservative about notifications. A listing does not need to be perfect, but it should feel plausibly worth the user's attention. Avoid spam.
 
+Many listings have sparse or generic descriptions. Do not heavily penalize a listing just because its description lacks detail about aesthetics or vibe. If the basics match (location, price, bedrooms, home type), give it a moderate score — the user can decide from photos. Reserve low scores (<30) for listings that clearly conflict with preferences (wrong area, way over budget, wrong home type).
+
 Return JSON only. No markdown, no explanation outside the JSON.`;
 
 const MAX_DESCRIPTION_LENGTH = 300;

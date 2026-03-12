@@ -268,7 +268,7 @@ export async function runHourlyCheck(
           // 60+: post with @mention (ping)
           // 40-59: post silently (no ping)
           // <40: skip
-          if (result.match_score < 40 || result.alert_type === 'ignore') continue;
+          if (result.match_score < 40) continue;
 
           const stored = getListingById(db, result.listing_id);
           if (!stored) continue;
