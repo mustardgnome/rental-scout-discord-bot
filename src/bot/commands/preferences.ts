@@ -19,6 +19,7 @@ export async function handleShowPreferences(
       { name: 'Home Types', value: prefs.preferred_home_types.join(', ') || 'Any' },
       { name: 'Must-Haves', value: prefs.must_haves.join(', ') || 'None' },
       { name: 'Nice-to-Haves', value: prefs.nice_to_haves.join(', ') || 'None' },
+      { name: 'Preferred Zip Codes', value: prefs.preferred_zip_codes?.join(', ') || 'None' },
       { name: 'Vibe', value: prefs.vibe_preferences.join(', ') || 'None' },
       { name: 'Alerts', value: prefs.alerts_paused ? 'Paused' : 'Active', inline: true },
     )
@@ -86,6 +87,7 @@ export async function handleSetPreferences(
   const mustHaves = parseCSV(interaction.options.getString('must-haves'));
   const niceToHaves = parseCSV(interaction.options.getString('nice-to-haves'));
   const vibes = parseCSV(interaction.options.getString('vibes'));
+  const zipCodes = parseCSV(interaction.options.getString('zip-codes'));
 
   if (bedrooms !== null) updates.min_bedrooms = bedrooms;
   if (bathrooms !== null) updates.min_bathrooms = bathrooms;
@@ -93,6 +95,7 @@ export async function handleSetPreferences(
   if (mustHaves) updates.must_haves = mustHaves;
   if (niceToHaves) updates.nice_to_haves = niceToHaves;
   if (vibes) updates.vibe_preferences = vibes;
+  if (zipCodes) updates.preferred_zip_codes = zipCodes;
 
   if (Object.keys(updates).length === 0) {
     await interaction.reply({

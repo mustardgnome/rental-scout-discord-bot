@@ -46,6 +46,9 @@ export function buildCommands(): SlashCommandBuilder[] {
       )
       .addStringOption((o) =>
         o.setName('vibes').setDescription('Comma-separated vibe preferences'),
+      )
+      .addStringOption((o) =>
+        o.setName('zip-codes').setDescription('Comma-separated preferred zip codes (soft preference)'),
       ) as SlashCommandBuilder,
 
     new SlashCommandBuilder()
@@ -59,6 +62,10 @@ export function buildCommands(): SlashCommandBuilder[] {
     new SlashCommandBuilder()
       .setName('test-alert')
       .setDescription('Send a test alert to verify the bot is working'),
+
+    new SlashCommandBuilder()
+      .setName('scan-now')
+      .setDescription('Run a listing scan immediately'),
   ];
 }
 

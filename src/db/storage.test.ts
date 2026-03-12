@@ -47,6 +47,7 @@ const samplePrefs: UserPreferences = {
   preferred_home_types: ['house', 'duplex'],
   must_haves: ['laundry'],
   nice_to_haves: ['yard'],
+  preferred_zip_codes: ['78704'],
   vibe_preferences: ['character over sterile luxury'],
   alerts_paused: false,
 };

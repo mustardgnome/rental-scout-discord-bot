@@ -1,6 +1,23 @@
 import axios from 'axios';
 import { NormalizedListing, ListingProvider } from '../types.js';
 
+const HOME_TYPE_MAP: Record<string, string> = {
+  single_family: 'house',
+  multi_family: 'duplex',
+  duplex_triplex: 'duplex',
+  townhomes: 'townhome',
+  townhouse: 'townhome',
+  condos: 'condo',
+  condo: 'condo',
+  apartment: 'apartment',
+  apartments: 'apartment',
+};
+
+function normalizeHomeType(raw: string): string {
+  const lower = raw.toLowerCase().replace(/\s+/g, '_');
+  return HOME_TYPE_MAP[lower] || lower;
+}
+
 export function normalizeRealtyUsListing(raw: any): NormalizedListing {
   const addr = raw.location?.address || {};
   const neighborhoods = raw.location?.neighborhoods || [];
@@ -15,7 +32,7 @@ export function normalizeRealtyUsListing(raw: any): NormalizedListing {
     bedrooms: desc.beds || 0,
     bathrooms: desc.baths || 0,
     sqft: desc.sqft || null,
-    home_type: desc.type || 'unknown',
+    home_type: normalizeHomeType(desc.type || 'unknown'),
     features: raw.tags || [],
     description: desc.text || '',
     image_url: raw.photos?.[0]?.href || null,
@@ -36,23 +53,25 @@ export function createRapidApiProvider(
       const { city, stateCode, limit, maxPrice, minBedrooms, minBathrooms } =
         params;
 
-      const queryParams: Record<string, string | number> = {
-        city,
-        state_code: stateCode,
+      const body: Record<string, any> = {
         limit,
         offset: 0,
-        sort: 'newest',
+        city,
+        state_code: stateCode,
+        status: ['for_rent'],
+        sort: { direction: 'desc', field: 'list_date' },
       };
 
-      if (maxPrice) queryParams.price_max = maxPrice;
-      if (minBedrooms) queryParams.beds_min = minBedrooms;
-      if (minBathrooms) queryParams.baths_min = minBathrooms;
+      if (maxPrice) body.price_max = maxPrice;
+      if (minBedrooms) body.beds_min = minBedrooms;
+      if (minBathrooms) body.baths_min = minBathrooms;
 
-      const response = await axios.get(
+      const response = await axios.post(
         'https://' + host + '/properties/v3/list',
+        body,
         {
-          params: queryParams,
           headers: {
+            'Content-Type': 'application/json',
             'x-rapidapi-key': apiKey,
             'x-rapidapi-host': host,
           },

@@ -8,9 +8,18 @@ export function quickFilter(
   prefs: UserPreferences,
 ): boolean {
   if (listing.hidden) return false;
-  if (listing.price > prefs.max_budget) return false;
-  if (listing.bedrooms < prefs.min_bedrooms) return false;
-  if (listing.bathrooms < prefs.min_bathrooms) return false;
+  if (listing.price > prefs.max_budget) {
+    console.log(`[filter] ${listing.id}: price $${listing.price} > max $${prefs.max_budget}`);
+    return false;
+  }
+  if (listing.bedrooms < prefs.min_bedrooms) {
+    console.log(`[filter] ${listing.id}: ${listing.bedrooms}bd < min ${prefs.min_bedrooms}bd`);
+    return false;
+  }
+  if (listing.bathrooms < prefs.min_bathrooms) {
+    console.log(`[filter] ${listing.id}: ${listing.bathrooms}ba < min ${prefs.min_bathrooms}ba`);
+    return false;
+  }
 
   if (
     prefs.preferred_home_types.length > 0 &&
@@ -18,6 +27,7 @@ export function quickFilter(
       (t) => t.toLowerCase() === listing.home_type.toLowerCase(),
     )
   ) {
+    console.log(`[filter] ${listing.id}: type "${listing.home_type}" not in [${prefs.preferred_home_types}]`);
     return false;
   }
 
@@ -26,6 +36,7 @@ export function quickFilter(
       listing.neighborhood.toLowerCase().includes(area.toLowerCase()),
     )
   ) {
+    console.log(`[filter] ${listing.id}: neighborhood "${listing.neighborhood}" excluded`);
     return false;
   }
 

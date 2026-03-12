@@ -81,13 +81,29 @@ export async function runHourlyCheck(
         allListings.push(...listings);
         succeededProviders.add(provider.name);
         console.log(`[hourly] ${provider.name}: fetched ${listings.length} listings`);
-      } catch (err) {
+      } catch (err: any) {
         console.error(`[hourly] ${provider.name} failed:`, err);
+        const status = err?.response?.status;
+        if (status === 429 || status === 403) {
+          const msg = status === 429
+            ? '⚠️ RapidAPI rate limit reached. You may have hit your monthly cap.'
+            : '⚠️ RapidAPI returned 403 Forbidden. Check your API key or subscription.';
+          try {
+            const ch = (await discord.channels.fetch(env.ALERT_CHANNEL_ID)) as TextChannel | null;
+            if (ch) await ch.send(msg);
+          } catch (_) { /* best effort */ }
+        }
       }
     }
 
     if (allListings.length === 0) {
       console.warn('[hourly] No listings fetched from any provider');
+      try {
+        const channel = (await discord.channels.fetch(env.ALERT_CHANNEL_ID)) as TextChannel | null;
+        if (channel) {
+          await channel.send('⚠️ Scan complete but no listings were fetched. All providers may have failed — check logs.');
+        }
+      } catch (_) { /* best effort */ }
       return;
     }
 
@@ -237,7 +253,7 @@ export async function runHourlyCheck(
           continue;
         }
 
-        // Step 9: Process results — ALL listings, not just notify:true
+        // Step 9: Process results — ALL listings
         for (const result of results) {
           updateListingEvaluation(db, result.listing_id, {
             evaluation_status: 'evaluated',
@@ -246,42 +262,68 @@ export async function runHourlyCheck(
             mismatch_reason: result.why_not,
           });
 
-          if (result.notify && result.alert_type !== 'ignore') {
-            const stored = getListingById(db, result.listing_id);
-            if (!stored) continue;
+          console.log(`[evaluate] ${result.listing_id}: score=${result.match_score} notify=${result.notify} type=${result.alert_type}`);
 
-            const candidate = batch.find((c) => c.listing.id === result.listing_id);
-            const changeType = candidate?.change_type || 'new';
+          // Score tiers:
+          // 60+: post with @mention (ping)
+          // 40-59: post silently (no ping)
+          // <40: skip
+          if (result.match_score < 40 || result.alert_type === 'ignore') continue;
 
-            if (!shouldNotify(stored, changeType)) continue;
+          const stored = getListingById(db, result.listing_id);
+          if (!stored) continue;
 
-            try {
-              const embed = buildAlertEmbed(stored, result.alert_type, candidate?.previous_price);
-              const buttons = buildFeedbackButtons(stored.id);
+          const candidate = batch.find((c) => c.listing.id === result.listing_id);
+          const changeType = candidate?.change_type || 'new';
 
-              await channel.send({
-                content: `<@${env.USER_DISCORD_ID}>`,
-                embeds: [embed],
-                components: buttons,
-              });
+          if (!shouldNotify(stored, changeType)) continue;
 
-              updateListingNotified(db, stored.id);
-              await sleep(SEND_DELAY_MS);
-            } catch (err) {
-              console.error(`[hourly] Failed to send alert for ${stored.id}:`, err);
-            }
+          try {
+            const embed = buildAlertEmbed(stored, result.alert_type, candidate?.previous_price);
+            const buttons = buildFeedbackButtons(stored.id);
+
+            const shouldPing = result.match_score >= 60;
+            await channel.send({
+              content: shouldPing ? `<@${env.USER_DISCORD_ID}>` : undefined,
+              embeds: [embed],
+              components: buttons,
+            });
+
+            updateListingNotified(db, stored.id);
+            await sleep(SEND_DELAY_MS);
+          } catch (err) {
+            console.error(`[hourly] Failed to send alert for ${stored.id}:`, err);
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         // Step 10: Mark failed
         console.error('[hourly] Claude batch evaluation failed:', err);
         for (const c of batch) {
           setListingEvaluationStatus(db, c.listing.id, 'failed');
         }
+        const status = err?.status;
+        if (status === 429 || status === 401 || status === 403) {
+          const msg = status === 429
+            ? '⚠️ Anthropic rate limit hit. Claude evaluation paused for this scan.'
+            : '⚠️ Anthropic API auth error. Check your API key or account balance.';
+          try {
+            await channel.send(msg);
+          } catch (_) { /* best effort */ }
+          break; // no point trying more batches
+        }
       }
     }
 
     console.log('[hourly] Hourly check complete');
+  } catch (err) {
+    console.error('[hourly] Unexpected error:', err);
+    try {
+      const channel = (await discord.channels.fetch(env.ALERT_CHANNEL_ID)) as TextChannel | null;
+      if (channel) {
+        const msg = err instanceof Error ? err.message : String(err);
+        await channel.send(`⚠️ Scan failed: ${msg}`);
+      }
+    } catch (_) { /* best effort */ }
   } finally {
     isRunning = false;
   }

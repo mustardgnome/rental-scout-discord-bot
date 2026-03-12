@@ -167,10 +167,19 @@ export function parseEvaluationResponse(
   text: string,
 ): ClaudeEvaluationResult[] | null {
   try {
-    const parsed = JSON.parse(text);
-    if (!parsed.results || !Array.isArray(parsed.results)) return null;
+    // Strip markdown code fences if present
+    let cleaned = text.trim();
+    if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+    }
+    const parsed = JSON.parse(cleaned);
+    if (!parsed.results || !Array.isArray(parsed.results)) {
+      console.error('[evaluate] Parsed JSON but no results array. Keys:', Object.keys(parsed));
+      return null;
+    }
     return parsed.results;
-  } catch {
+  } catch (err) {
+    console.error('[evaluate] Failed to parse response:', text.slice(0, 200));
     return null;
   }
 }

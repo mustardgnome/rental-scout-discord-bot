@@ -9,25 +9,29 @@ export interface UserPreferences {
   preferred_home_types: string[];
   must_haves: string[];
   nice_to_haves: string[];
+  preferred_zip_codes: string[];
   vibe_preferences: string[];
   alerts_paused: boolean;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   market: 'Austin, TX',
-  target_budget: 2200,
-  max_budget: 2400,
+  target_budget: 2300,
+  max_budget: 3000,
   preferred_areas: ['Zilker', 'Bouldin', 'South Lamar', 'South Austin'],
   excluded_areas: [],
-  min_bedrooms: 2,
+  min_bedrooms: 1,
   min_bathrooms: 1,
   preferred_home_types: ['house', 'duplex', 'townhome', 'condo'],
-  must_haves: ['laundry'],
-  nice_to_haves: ['yard', 'wood floors', 'good natural light'],
+  must_haves: ['natural lighting'],
+  nice_to_haves: ['wood paneling', 'wood floors'],
+  preferred_zip_codes: ['78704'],
   vibe_preferences: [
+    'mid century modern',
+    'wood paneling',
+    'natural light',
     'character over sterile luxury',
-    'quieter residential feel',
-    'not a giant generic complex',
+    'prefer 1bd with office or 2bd, not 3bd+',
   ],
   alerts_paused: false,
 };

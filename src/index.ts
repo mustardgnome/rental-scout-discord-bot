@@ -88,6 +88,11 @@ async function main(): Promise<void> {
           case 'test-alert':
             await handleTestAlert(interaction, db, env.USER_DISCORD_ID);
             break;
+          case 'scan-now':
+            await interaction.deferReply();
+            await runHourlyCheck(db, providers, claude, discord, env);
+            await interaction.editReply('Scan complete.');
+            break;
         }
       } catch (err) {
         console.error(`[bot] Error handling /${interaction.commandName}:`, err);
@@ -105,6 +110,11 @@ async function main(): Promise<void> {
     }
   });
 
+  // Handle Discord errors without crashing
+  discord.on('error', (err) => {
+    console.error('[discord] Client error:', err.message);
+  });
+
   // Step 5: Login
   await discord.login(env.DISCORD_BOT_TOKEN);
   console.log('[boot] Discord bot logged in');
@@ -117,9 +127,9 @@ async function main(): Promise<void> {
   // Claude client
   const claude = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
-  // Step 6: Schedule hourly job
-  cron.schedule('0 * * * *', async () => {
-    console.log('[cron] Triggering hourly check');
+  // Step 6: Schedule listing check hourly from 6am-6pm
+  cron.schedule('0 6-18 * * *', async () => {
+    console.log('[cron] Triggering listing check');
     await runHourlyCheck(db, providers, claude, discord, env);
   });
 
