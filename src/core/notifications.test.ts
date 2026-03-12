@@ -32,12 +32,12 @@ const makeStored = (overrides: Partial<StoredListing> = {}): StoredListing => ({
 
 describe('quickFilter', () => {
   it('filters out listings above max budget', () => {
-    const listing = makeStored({ price: 3000 });
+    const listing = makeStored({ price: 3500 });
     expect(quickFilter(listing, DEFAULT_PREFERENCES)).toBe(false);
   });
 
   it('filters out listings below min bedrooms', () => {
-    const listing = makeStored({ bedrooms: 1 });
+    const listing = makeStored({ bedrooms: 0 });
     expect(quickFilter(listing, DEFAULT_PREFERENCES)).toBe(false);
   });
 

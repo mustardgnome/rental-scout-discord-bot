@@ -18,6 +18,7 @@ import {
   handleTestAlert,
 } from './bot/commands/alerts.js';
 import { createRapidApiProvider } from './providers/rapidapi.js';
+import { createCraigslistProvider } from './providers/craigslist.js';
 import { runHourlyCheck } from './jobs/hourlyCheck.js';
 import { ListingProvider } from './types.js';
 import { mkdirSync } from 'fs';
@@ -120,9 +121,18 @@ async function main(): Promise<void> {
   console.log('[boot] Discord bot logged in');
 
   // Set up providers
-  const providers: ListingProvider[] = env.RAPIDAPI_SOURCES.map((source) =>
-    createRapidApiProvider(env.RAPIDAPI_KEY, env.rapidapiHost(source), source),
-  );
+  const providers: ListingProvider[] = env.RAPIDAPI_SOURCES.map((source) => {
+    const host = env.rapidapiHost(source);
+    return createRapidApiProvider(env.RAPIDAPI_KEY, host, source);
+  });
+
+  // Craigslist via Gmail alerts
+  if (env.GMAIL_USER && env.GMAIL_APP_PASSWORD) {
+    providers.push(createCraigslistProvider({
+      user: env.GMAIL_USER,
+      password: env.GMAIL_APP_PASSWORD,
+    }));
+  }
 
   // Claude client
   const claude = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });

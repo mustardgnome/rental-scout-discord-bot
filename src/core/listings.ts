@@ -21,7 +21,10 @@ export function deduplicateListings(
 ): NormalizedListing[] {
   const seen = new Map<string, NormalizedListing>();
   for (const listing of listings) {
-    const key = normalizeAddress(listing.address);
+    // Use listing_id as key if address is empty (e.g. Craigslist email alerts)
+    const key = listing.address
+      ? normalizeAddress(listing.address)
+      : `${listing.source}-${listing.listing_id}`;
     if (!seen.has(key)) {
       seen.set(key, listing);
     }

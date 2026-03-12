@@ -1,22 +1,12 @@
-FROM node:20-alpine AS builder
+FROM node:20
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json package-lock.json .npmrc ./
+COPY node_modules ./node_modules
+RUN npm rebuild better-sqlite3
 
-COPY tsconfig.json ./
-COPY src/ ./src/
-RUN npm run build
-
-FROM node:20-alpine
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
-
-COPY --from=builder /app/dist ./dist
+COPY dist ./dist
 
 RUN mkdir -p /app/data
 

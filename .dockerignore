@@ -1,0 +1,6 @@
+src
+*.ts
+*.md
+.env.example
+.git
+data

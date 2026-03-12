@@ -22,7 +22,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   excluded_areas: [],
   min_bedrooms: 1,
   min_bathrooms: 1,
-  preferred_home_types: ['house', 'duplex', 'townhome', 'condo'],
+  preferred_home_types: ['house', 'duplex', 'townhome'],
   must_haves: ['natural lighting'],
   nice_to_haves: ['wood paneling', 'wood floors'],
   preferred_zip_codes: ['78704'],

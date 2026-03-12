@@ -12,6 +12,8 @@ export interface EnvConfig {
   USER_DISCORD_ID: string;
   RAPIDAPI_KEY: string;
   RAPIDAPI_SOURCES: string[];
+  GMAIL_USER: string;
+  GMAIL_APP_PASSWORD: string;
   rapidapiHost: (source: string) => string;
 }
 
@@ -39,6 +41,8 @@ export function loadEnv(): EnvConfig {
     USER_DISCORD_ID: required('USER_DISCORD_ID'),
     RAPIDAPI_KEY: required('RAPIDAPI_KEY'),
     RAPIDAPI_SOURCES: sources,
+    GMAIL_USER: process.env.GMAIL_USER || '',
+    GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD || '',
     rapidapiHost(source: string): string {
       const envKey = `RAPIDAPI_HOST_${source.toUpperCase().replace(/-/g, '_')}`;
       const host = process.env[envKey];

@@ -12,17 +12,21 @@ export function quickFilter(
     console.log(`[filter] ${listing.id}: price $${listing.price} > max $${prefs.max_budget}`);
     return false;
   }
-  if (listing.bedrooms < prefs.min_bedrooms) {
+  // For Craigslist listings, 0 means "unknown" — let Claude decide
+  const isCraigslist = listing.source === 'craigslist';
+
+  if (listing.bedrooms < prefs.min_bedrooms && !(isCraigslist && listing.bedrooms === 0)) {
     console.log(`[filter] ${listing.id}: ${listing.bedrooms}bd < min ${prefs.min_bedrooms}bd`);
     return false;
   }
-  if (listing.bathrooms < prefs.min_bathrooms) {
+  if (listing.bathrooms < prefs.min_bathrooms && !(isCraigslist && listing.bathrooms === 0)) {
     console.log(`[filter] ${listing.id}: ${listing.bathrooms}ba < min ${prefs.min_bathrooms}ba`);
     return false;
   }
 
   if (
     prefs.preferred_home_types.length > 0 &&
+    listing.home_type !== 'unknown' &&
     !prefs.preferred_home_types.some(
       (t) => t.toLowerCase() === listing.home_type.toLowerCase(),
     )
