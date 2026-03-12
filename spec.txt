@@ -1,0 +1,574 @@
+# rental-scout-bot — Simple Personal Austin Rental Watcher Spec
+
+## Goal
+
+Build a simple personal Discord bot that helps me find my next rental home in Austin, Texas.
+
+This is not a startup MVP or a public multi-user product.
+It is a personal tool for one user.
+
+The bot should:
+
+- monitor Austin rental listings hourly
+- use listing APIs / real-estate data sources, including RapidAPI if useful
+- prefer rental homes, duplexes, townhomes, condos, and similar listings
+- support realtor-style / MLS-like listing sources if available through APIs or vendors
+- compare listings against my preferences
+- notify me in Discord when:
+  - a new listing looks like a decent match
+  - a listing drops in price
+  - a listing comes back on market
+  - a listing changes in a way that makes it more appealing
+
+The bot does not need to be overengineered.
+It just needs to help me notice Austin rentals that are worth a look.
+
+--------------------------------------------------
+## Scope
+--------------------------------------------------
+
+This tool is for:
+
+- one user
+- one market: Austin, Texas
+- Discord as the interface
+- hourly monitoring
+- simple persistence
+- Claude for light ranking / explanation
+
+This tool is not for:
+
+- multiple users
+- a public product
+- a web app
+- scheduling tours
+- applying to rentals
+- full MLS brokerage software
+- a giant preference engine
+
+--------------------------------------------------
+## What the bot should do
+--------------------------------------------------
+
+### 1. Store my preferences
+
+The bot should let me define simple rental preferences such as:
+
+- target budget
+- hard max budget
+- preferred Austin neighborhoods or zones
+- excluded areas
+- minimum bedrooms
+- minimum bathrooms
+- preferred home types
+- must-have features
+- nice-to-have features
+- general vibe preferences
+
+Examples of vibe preferences:
+
+- more character, less sterile
+- house or duplex preferred over giant apartment complex
+- quieter residential feel
+- good light
+- decent location
+- not overly generic luxury style
+
+The bot does not need to build a complicated psychological profile.
+It just needs enough information to decide:
+“Does this seem like something I’d probably want to click on?”
+
+### 2. Check listing sources hourly
+
+Every hour, the bot should:
+
+- fetch Austin rental listings from configured sources
+- normalize the data into one simple common format
+- compare current listings to previously seen listings
+- identify:
+  - new listings
+  - price drops
+  - status changes
+  - meaningful updates
+
+The source layer should be pluggable.
+
+Good source options:
+
+- RapidAPI real-estate APIs
+- realtor-style listing APIs
+- MLS-like feeds if accessible through an API or vendor
+- brokerage or property-manager feeds
+
+Important:
+This is Austin-only, so source handling can be tailored specifically to Austin listings.
+
+### 3. Use Claude to lightly score listings
+
+Claude should be used for lightweight judgment, not for everything.
+
+Claude should answer questions like:
+
+- Does this listing roughly match my preferences?
+- Is this worth notifying me about?
+- Why does it seem like a fit or not a fit?
+
+Claude should not be used for:
+
+- crawling listings
+- storing state
+- scheduling jobs
+- handling Discord directly
+
+Claude should receive:
+
+- my saved preferences
+- the listing data
+- optionally the previous version of the listing
+- optionally prior feedback from me
+
+Claude should return:
+
+- a rough match score
+- short reason why it matches
+- short reason why it may not
+- whether the bot should notify me
+
+### 4. Send Discord alerts
+
+The bot should post or DM me when a listing is worth attention.
+
+Each alert should be short and useful.
+
+Include:
+
+- title
+- price
+- neighborhood
+- home type
+- why it seems like a match
+- link to listing
+
+Example alert types:
+
+- New listing that seems like a match
+- Price drop on a previously decent listing
+- Back on market
+- Listing updated with better details
+
+The bot should avoid spamming me with junk.
+
+### 5. Let me give simple feedback
+
+Each Discord alert should allow simple feedback such as:
+
+- Love it
+- Hide
+- Too expensive
+- Wrong area
+- Wrong vibe
+- More like this
+
+This feedback should help future ranking a little bit.
+It does not need to be fancy.
+
+--------------------------------------------------
+## Austin-specific simplification
+--------------------------------------------------
+
+Because this tool is only for Austin:
+
+- preferences can be based on Austin neighborhoods
+- ranking can use Austin-specific area names
+- commute logic can be Austin-specific if needed
+- the bot does not need to support arbitrary national geography
+- data ingestion can be focused on Austin rental inventory only
+
+The prompt and code should assume the market is Austin, Texas unless explicitly changed later.
+
+--------------------------------------------------
+## Minimal architecture
+--------------------------------------------------
+
+Use a simple architecture:
+
+1. Discord bot
+2. hourly worker
+3. database
+4. provider adapters
+5. Claude evaluation function
+
+### Discord bot
+Responsible for:
+
+- onboarding
+- commands
+- sending alerts
+- collecting button feedback
+
+### Hourly worker
+Responsible for:
+
+- running once per hour
+- fetching listings
+- normalizing listings
+- comparing to previous listings
+- sending candidates to Claude
+- sending alerts if warranted
+
+### Database
+Responsible for:
+
+- preferences
+- seen listings
+- listing history
+- feedback
+- notification cooldowns
+
+### Provider adapters
+Responsible for:
+
+- calling listing APIs
+- mapping raw data into a common format
+
+### Claude evaluation
+Responsible for:
+
+- deciding if a listing seems worth sending
+- generating a short explanation
+
+--------------------------------------------------
+## Simpler data model
+--------------------------------------------------
+
+### User preferences
+
+Store something like:
+
+{
+  "market": "Austin, TX",
+  "target_budget": 2200,
+  "max_budget": 2400,
+  "preferred_areas": ["Zilker", "Bouldin", "South Lamar", "South Austin"],
+  "excluded_areas": [],
+  "min_bedrooms": 2,
+  "min_bathrooms": 1,
+  "preferred_home_types": ["house", "duplex", "townhome", "condo"],
+  "must_haves": ["laundry"],
+  "nice_to_haves": ["yard", "wood floors", "good natural light"],
+  "vibe_preferences": [
+    "character over sterile luxury",
+    "quieter residential feel",
+    "not a giant generic complex"
+  ]
+}
+
+### Normalized listing
+
+Use a simple schema like:
+
+{
+  "listing_id": "source-id-or-internal-id",
+  "source": "rapidapi-or-other",
+  "address": "123 Example St",
+  "neighborhood": "Zilker",
+  "price": 2295,
+  "bedrooms": 2,
+  "bathrooms": 1,
+  "sqft": 950,
+  "home_type": "duplex",
+  "features": ["wood floors", "yard", "laundry"],
+  "description": "Bright duplex in South Austin...",
+  "url": "https://example.com/listing",
+  "status": "active",
+  "first_seen_at": "ISO_DATE",
+  "last_seen_at": "ISO_DATE"
+}
+
+### Feedback
+
+Store simple feedback events like:
+
+{
+  "listing_id": "abc123",
+  "feedback": "love_it",
+  "created_at": "ISO_DATE"
+}
+
+--------------------------------------------------
+## Notification rules
+--------------------------------------------------
+
+Notify me when:
+
+- a new listing looks like a decent match
+- a listing drops in price enough to matter
+- a listing comes back on market
+- a listing gains details that make it look more appealing
+
+Do not notify me when:
+
+- it is clearly a bad fit
+- the change is trivial
+- it already alerted recently and nothing meaningful changed
+
+Use a simple cooldown to reduce spam.
+
+Example:
+
+- do not alert again on the same listing within 24 hours unless there is a meaningful change
+
+--------------------------------------------------
+## Claude prompt behavior
+--------------------------------------------------
+
+Claude should be told:
+
+- this is for one user
+- this is Austin-only
+- this is a personal rental finder
+- do not overcomplicate the analysis
+- give a practical judgment
+- keep responses short and structured
+- prioritize whether a listing is worth attention
+
+Claude should evaluate listings based on:
+
+- price fit
+- area fit
+- home type fit
+- must-haves
+- general vibe fit
+- whether the listing feels promising enough to send
+
+Claude should return something like:
+
+{
+  "match_score": 78,
+  "notify": true,
+  "why_match": "Good South Austin area fit, duplex format, and more character than a typical generic apartment.",
+  "why_not": "Slightly above target budget and kitchen looks dated.",
+  "alert_type": "new_match"
+}
+
+--------------------------------------------------
+## Discord commands
+--------------------------------------------------
+
+Keep commands simple:
+
+- /start
+- /set-preferences
+- /show-preferences
+- /set-budget
+- /set-areas
+- /pause-alerts
+- /resume-alerts
+- /test-alert
+
+Buttons on alerts:
+
+- Love it
+- Hide
+- Too expensive
+- Wrong area
+- Wrong vibe
+- More like this
+
+--------------------------------------------------
+## .env file requirement
+--------------------------------------------------
+
+The project should include an .env.example file and load environment variables from .env.
+
+At minimum support:
+
+ANTHROPIC_API_KEY=
+DISCORD_BOT_TOKEN=
+DISCORD_CLIENT_ID=
+DISCORD_GUILD_ID=
+DATABASE_URL=
+LISTING_API_KEY=
+RAPIDAPI_KEY=
+RAPIDAPI_HOST=
+ALERT_CHANNEL_ID=
+USER_DISCORD_ID=
+
+Notes:
+
+- ANTHROPIC_API_KEY is for Claude
+- DISCORD_BOT_TOKEN is for the Discord bot
+- DISCORD_CLIENT_ID is the Discord application ID
+- DISCORD_GUILD_ID is useful for registering guild commands during development
+- DATABASE_URL can point to SQLite or Postgres
+- LISTING_API_KEY is a generic listing provider key if needed
+- RAPIDAPI_KEY is for RapidAPI-based listing providers
+- RAPIDAPI_HOST is for the chosen RapidAPI host/provider
+- ALERT_CHANNEL_ID is where alerts should be posted
+- USER_DISCORD_ID can restrict the tool to me personally if desired
+
+Use dotenv or equivalent.
+
+--------------------------------------------------
+## File structure
+--------------------------------------------------
+
+Keep the project simple:
+
+rental-scout-bot/
+  src/
+    bot/
+      commands/
+      alerts/
+      interactions/
+    providers/
+      rapidapiProvider.ts
+      exampleProvider.ts
+    core/
+      preferences.ts
+      listings.ts
+      compareListings.ts
+      evaluateWithClaude.ts
+      notifications.ts
+    jobs/
+      hourlyCheck.ts
+    db/
+      schema.ts
+      storage.ts
+    config/
+      env.ts
+    index.ts
+  .env.example
+  package.json
+  README.md
+
+--------------------------------------------------
+## Simple hourly flow
+--------------------------------------------------
+
+The hourly job should do roughly this:
+
+1. load my saved preferences
+2. fetch Austin listings from configured providers
+3. normalize listings
+4. compare to previous snapshot
+5. identify new or meaningfully changed listings
+6. send those listings to Claude for lightweight evaluation
+7. filter to listings worth notifying about
+8. send Discord alerts
+9. save current listing state
+
+--------------------------------------------------
+## Implementation style
+--------------------------------------------------
+
+Keep the code simple and practical.
+
+Prefer:
+
+- small modules
+- readable TypeScript
+- a simple database layer
+- minimal abstractions
+- clear JSON shapes
+- easy local setup
+
+Avoid:
+
+- overengineering
+- enterprise architecture
+- massive config systems
+- unnecessary microservices
+- overcomplicated scoring models
+
+This is a personal tool, not a startup backend.
+
+--------------------------------------------------
+## Single system prompt for Claude
+--------------------------------------------------
+
+You are helping power a personal rental-finder bot for one user in Austin, Texas.
+
+This is not a public product and not a multi-user marketplace.
+Your job is simple: look at Austin rental listings and decide whether they seem worth notifying the user about.
+
+Keep your analysis practical and lightweight.
+
+Priorities:
+- fit to budget
+- fit to Austin area preferences
+- fit to home-type preferences
+- fit to must-have features
+- general vibe fit
+- whether the listing seems promising enough to click on
+
+Do not overcomplicate the analysis.
+Do not invent a deep personality model.
+Do not write long essays.
+
+Given a saved preference profile and one or more listing records, return short structured judgments.
+
+For each listing, decide:
+- rough match score from 0 to 100
+- whether to notify
+- short reason it matches
+- short reason it may not
+- alert type such as:
+  - new_match
+  - price_drop
+  - back_on_market
+  - improved_listing
+  - ignore
+
+Be conservative about notifications.
+Avoid spam.
+A listing does not need to be perfect to notify, but it should feel plausibly worth the user’s attention.
+
+Return JSON only.
+
+--------------------------------------------------
+## Single evaluation template
+--------------------------------------------------
+
+Evaluate these Austin rental listings for one user.
+
+User preferences:
+{{USER_PREFERENCES_JSON}}
+
+Listings:
+{{LISTINGS_JSON}}
+
+Optional previous versions:
+{{PREVIOUS_LISTINGS_JSON}}
+
+Return JSON like this:
+
+{
+  "results": [
+    {
+      "listing_id": "abc123",
+      "match_score": 78,
+      "notify": true,
+      "why_match": "Good South Austin area fit, duplex format, and more character than a typical generic apartment.",
+      "why_not": "Slightly above target budget and kitchen looks dated.",
+      "alert_type": "new_match"
+    }
+  ]
+}
+
+--------------------------------------------------
+## Final instruction to the coding assistant
+--------------------------------------------------
+
+Build this as a simple personal Austin rental watcher in Discord.
+
+Prioritize:
+
+- simplicity
+- usefulness
+- hourly automation
+- easy configuration
+- practical notifications
+
+Do not overbuild it.
+It should be easy to run, easy to tweak, and good enough to help me find my next place in Austin.

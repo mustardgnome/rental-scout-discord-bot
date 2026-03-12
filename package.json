@@ -1,0 +1,35 @@
+{
+  "name": "rental-scout-discord-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "axios": "^1.13.6",
+    "better-sqlite3": "^12.6.2",
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.3.1",
+    "node-cron": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.4.0",
+    "@types/node-cron": "^3.0.11",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
