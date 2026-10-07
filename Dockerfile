@@ -3,10 +3,11 @@ FROM node:20
 WORKDIR /app
 
 COPY package.json package-lock.json .npmrc ./
-COPY node_modules ./node_modules
-RUN npm rebuild better-sqlite3
+RUN npm ci
 
-COPY dist ./dist
+COPY tsconfig.json ./
+COPY src ./src
+RUN npx tsc
 
 RUN mkdir -p /app/data
 

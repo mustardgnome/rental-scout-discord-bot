@@ -1,9 +1,16 @@
 services:
   rental-scout:
     build: .
+    container_name: rental-scout
     restart: unless-stopped
     env_file: .env
     environment:
-      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      # node-cron runs the 6am-6pm hourly check in this timezone.
+      - TZ=${TZ:-America/Chicago}
     volumes:
       - ./data:/app/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
