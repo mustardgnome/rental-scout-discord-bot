@@ -1,6 +1,7 @@
-src
-*.ts
+node_modules
+dist
 *.md
+.env
 .env.example
 .git
 data
